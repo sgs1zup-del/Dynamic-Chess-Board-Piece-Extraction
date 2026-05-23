@@ -23,13 +23,30 @@ import chess.svg
 # STEP 1 --> Draw lines to the processed image 
 
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--image", type=str, required=True, help="Path to input image")
+args = parser.parse_args()
+
 # Path of Image that you want to convert
-image_path = "test-images/test-3.jpeg"
+image_path = args.image
 
 # read image and convert it to different color spaces 
 image = cv2.imread(image_path)
-gray_image=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-rgb_image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+
+# Resize for consistent CV processing across different image resolutions
+max_dim = 1200
+h, w = image.shape[:2]
+scale = max_dim / max(h, w)
+if scale < 1.0:
+    image_proc = cv2.resize(image, (int(w * scale), int(h * scale)))
+else:
+    image_proc = image.copy()
+    scale = 1.0
+
+gray_image=cv2.cvtColor(image_proc,cv2.COLOR_BGR2GRAY)
+rgb_image=cv2.cvtColor(image_proc,cv2.COLOR_BGR2RGB)
 
 
 # Processing Image 
@@ -162,7 +179,10 @@ dilated_black_image = cv2.dilate(black_image_2, kernel, iterations=1)
 contours, _ = cv2.findContours(dilated_black_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 
-# take biggest contour 
+# take biggest contour
+if not contours:
+    print("Error: No board contour found on the provided image.")
+    exit(1)
 largest_contour = max(contours, key=cv2.contourArea)
 
 # create black image
@@ -246,8 +266,9 @@ def fill_gaps():
     addition=0
 
     for num in range(63):
+        if num + 1 >= len(sorted_coordinates):
+            break
 
-        
         if num in [6,14,22,30,38,46,54]:
             if abs(sorted_coordinates[num][0]-sorted_coordinates[num+1][0])>250:
 
@@ -301,11 +322,19 @@ def fill_gaps():
     if addition!=0:
         fill_gaps()
     
-fill_gaps()      
+fill_gaps()
 
-
-
-
+# Scale coordinates back to original image resolution
+if scale < 1.0:
+    inv_scale = 1.0 / scale
+    for i in range(len(sorted_coordinates)):
+        sorted_coordinates[i][0] *= inv_scale
+        sorted_coordinates[i][1] *= inv_scale
+        for pt_idx in range(2, 6):
+            pt = list(sorted_coordinates[i][pt_idx])
+            pt[0] *= inv_scale
+            pt[1] *= inv_scale
+            sorted_coordinates[i][pt_idx] = pt
 
 ##############################################################################################
 
@@ -343,7 +372,7 @@ image = cv2.imread(image_path)
 for i, row in coordinates.iterrows():
     pts = []
     for j in range(0, 8, 2):
-        pts.append((int(row[j]), int(row[j+1])))
+        pts.append((int(row.iloc[j]), int(row.iloc[j+1])))
     pts = np.array(pts, np.int32)
     pts = pts.reshape((-1,1,2))
     cv2.circle(image, (int(sorted_coordinates[i][0]),int(sorted_coordinates[i][1])), 3, (0,255,0), 3)
@@ -482,6 +511,10 @@ svgboard = chess.svg.board(board)
 with open("extracted-data/2Dboard.svg", "w") as f:
     f.write(svgboard)
 
+# Save FEN string for API consumption
+with open("extracted-data/result.fen", "w") as f:
+    f.write(board.fen())
+
 
 
  # Function to convert SVG to PNG
@@ -517,7 +550,8 @@ plt.axis('off')  # Turn off axis numbers
 
 plt.savefig(f"result.jpeg")
 
-plt.show()  
+if os.environ.get('HEADLESS') != '1':
+    plt.show()
 
  
 

@@ -385,7 +385,7 @@ image = cv2.imread(image_path)
 for i, row in data.iterrows():
     pts = []
     for j in range(0, 8, 2):
-        pts.append((int(row[j]), int(row[j+1])))
+        pts.append((int(row.iloc[j]), int(row.iloc[j+1])))
     pts = np.array(pts, np.int32)
     pts = pts.reshape((-1,1,2))
     cv2.circle(image, (int(squares_data_original[i][0][0]),int(squares_data_original[i][0][1])), 3, (0,255,0), 3)

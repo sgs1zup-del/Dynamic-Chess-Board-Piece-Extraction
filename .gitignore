@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# ML models (large files)
+*.pt
+*.pth
+*.onnx
+*.tflite
+
+# Training artifacts
+runs/
+chess_training/
+
+# User uploads & extracted results
+uploads/
+extracted-data/
+
+# Datasets with images (optional — keep if you want)
+# dataset/
+# roboflow/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
